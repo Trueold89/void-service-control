@@ -1,82 +1,81 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Modules
-import os
-import subprocess
-import sys
+# Import
+import os, subprocess, sys
 
-# Vars
-allsv_path = '/etc/sv/'
-enabledsv_path = '/var/service/'
-allsv = os.listdir(allsv_path) 
-enabledsv = os.listdir(enabledsv_path)
+# Const
+SV_PATH = '/etc/sv'
+ENABLED_PATH = '/var/service'
 
-# Functions
+# Access
+def su():
+    out = subprocess.run('whoami', shell=True, text=True, stdout=subprocess.PIPE)
+    user = out.stdout[:-1]
+    if user == 'root':
+        return True
+    else:
+        return False
 
-## Help
+# Print help message 
 def helpmsg():
-    msg = '''
+    print('''
 Usage:
 ---
 vsc {e/enable/on/up} <service_name> - Run service and add it to autostart
 vsc {d/disable/off/down <service_name> - Stop service and remove it from autostart
----'''
-    return msg
+---
+''')
+    sys.exit(1)
 
-## Access
-def su():
-        user = subprocess.run('whoami', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if user.stdout[:-1] == 'root':
-            return args()
-        else:
-            return 'Access denied'
-
-## Service
-def exec(option, service):
-    if option == 'on':
-        if service in enabledsv:
-            return 'Service alredy enabled'
-        if service in allsv:
-            subprocess.run(f'ln -s {allsv_path}{service} {enabledsv_path}', shell=True)
-            return f'Service {service} successfully enabled'
-        if not(service in allsv):
-            return f"Service {service} doesn't exist"
-    if option == 'off':
-        if not(service in allsv):
-            return f"Service {service} doesn't exist"
-        if not(service in enabledsv):
-            return f'Service {service} has already been disabled'
-        if service in enabledsv:
-            subprocess.run(f'rm {enabledsv_path}{service}', shell=True)
-            return f'Service {service} successfully disabled'
-
-# Get argv
-def getargs():
-    global service
-    global option
-    option = sys.argv[1]
-    service = sys.argv[2]
-    return options(option)
-    
-# Args
-def args():
-    if len(sys.orig_argv[1:]) == 2:
-        if sys.orig_argv[2] == '--help':
-            return helpmsg()
-    elif len(sys.orig_argv[1:]) == 3:
-        return getargs()
+# Check exec args
+def args_check():
+    args = sys.orig_argv[2:]
+    if len(args) == 2:
+        return args
+    elif len(args) == 1 and args[0] in ['--h','--help']:
+        helpmsg()
     else:
-        return 'Invalid usage, see --help'
+        return False
 
-def options(option):
-    options = {
-            'on': ['enable','e','on','up'],
-            'off': ['disable','d','off','down']
-            }
-    for i in options.keys():
-        if option in options.get(i):
-            return exec(i,service)
-    return f'Invalid option: {option}, see --help'
+# Check availability
+def availability(service, action):
+    all = os.listdir(SV_PATH)
+    enabled = os.listdir(ENABLED_PATH)
+    all = service in all
+    if all == False:
+        raise Exception(f"Service '{service}' doesn't exist")
+    if service in enabled:
+        if action == 'on':
+            raise Exception(f"Service '{service}' already enabled")
+        elif action == 'off':
+            return True
+    else:
+        if action == 'off':
+            raise Exception(f"Service '{service}' already disabled")
+        elif action == 'on':
+            return True
 
-print(su())
+# Main
+def main():
+    try:
+        args = args_check()
+        if args == False:
+            raise Exception('Bad usage. See --help')
+        if su() == False:
+            raise Exception('Access denied')
+        action, service = args
+        if action in ['enable','e','on','up']:
+            if availability(service,'on'):
+                subprocess.run(f'ln -s {SV_PATH}/{service} {ENABLED_PATH}/', shell=True)
+                print(f"Service '{service}' successfully enabled")
+        if action in ['disable','d','off','down']:
+            if availability(service,'off'):
+                subprocess.run(f'rm {ENABLED_PATH}/{service}', shell=True)
+                print(f"Service '{service}' successfully disabled")
+    except Exception as ex:
+        print(ex)
+        sys.exit(0)
+
+if __name__ == '__main__':
+    main()
