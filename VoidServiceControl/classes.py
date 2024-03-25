@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from enum import Enum
 from os import listdir as ls
 from subprocess import run as execute
@@ -14,8 +15,7 @@ class Help(Exception):
         Returns the program usage help
         :return: Program usage help
         """
-        return ("Usage:\n---\nvsc {e/enable/on/up} <service_name> - Run service and add it to autostart\nvsc {"
-                "d/disable/off/down <service_name> - Stop service and remove it from autostart")
+        return lang.messages["help"]
 
 
 def Su() -> None:
@@ -24,7 +24,7 @@ def Su() -> None:
     """
     user = execute('whoami', shell=True, text=True, stdout=PIPE).stdout[:-1]
     if user != 'root':
-        raise PermissionError("Error: Access denied")
+        raise PermissionError(lang.errors["su"])
 
 
 # Types of service actions
@@ -69,11 +69,11 @@ class Args(object):
         Checks the arguments
         """
         if len(self.__arguments) != 2 and self.__arguments[0] not in Arg.HELP.value:
-            raise TypeError("Error: Bad Usage")
+            raise TypeError(lang.errors["usage"])
         if self.__arguments[0] in Arg.HELP.value:
             raise Help()
         if self.__arguments[0] not in Arg.all():
-            raise TypeError("Error: Invalid args")
+            raise TypeError(lang.errors["args"])
 
     def __action(self) -> Action:
         """
@@ -104,7 +104,7 @@ class Service(object):
         all_services = ls(SV_PATH)
         enabled_services = ls(ENABLED_PATH)
         if self.__name not in all_services:
-            raise ValueError(f"Error: Service {self.__name} doesn't exists")
+            raise ValueError(lang.errors["ne"].format(self.getname()))
         if self.__name in enabled_services:
             self.__enabled = True
 
@@ -120,7 +120,7 @@ class Service(object):
         Enable the service
         """
         if self.__enabled:
-            raise ValueError(f"Error: Service {self.__name} already enabled")
+            raise ValueError(lang.errors["enabled"].format(self.getname()))
         execute(f'ln -s {SV_PATH}/{self.__name} {ENABLED_PATH}/', shell=True)
 
     def disable(self):
@@ -128,7 +128,7 @@ class Service(object):
         Disable the service
         """
         if not self.__enabled:
-            raise ValueError(f"Error: Service {self.__name} already disabled")
+            raise ValueError(lang.errors["disabled"].format(self.getname()))
         execute(f'rm {ENABLED_PATH}/{self.__name}', shell=True)
 
 
@@ -145,7 +145,30 @@ class Interface(object):
         match action:
             case Action.ENABLE:
                 self.service.enable()
-                print(f"Service '{self.service.getname()}' successfully enabled")
+                print(lang.messages["enabled"].format(self.service.getname()))
             case Action.DISABLE:
                 self.service.disable()
-                print(f"Service '{self.service.getname()}' successfully disabled")
+                print(lang.messages["disabled"].format(self.service.getname()))
+
+
+class Translate(object):
+
+    def __init__(self, language: str):
+        """
+        :param language: Language (ex. en_US)
+        """
+        self.lang = language
+        self.errors = self.__translation["errors"]
+        self.messages = self.__translation["messages"]
+
+    @property
+    def __translation(self):
+        try:
+            with open(f"VoidServiceControl/languages/{self.lang}.json", "r", encoding="utf-8") as json_file:
+                return json.loads(json_file.read())
+        except FileNotFoundError:
+            with open(f"VoidServiceControl/languages/en_US.json", "r", encoding="utf-8") as json_file:
+                return json.loads(json_file.read())
+
+
+lang = Translate(LANG)
