@@ -70,6 +70,8 @@ class Args(object):
         """
         Checks the arguments
         """
+        if len(self.__arguments) == 0:
+            raise TypeError(lang.errors["usage"])
         if len(self.__arguments) != 2 and self.__arguments[0] not in Arg.HELP.value:
             raise TypeError(lang.errors["usage"])
         if self.__arguments[0] in Arg.HELP.value:
