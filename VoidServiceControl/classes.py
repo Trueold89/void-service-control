@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import importlib.resources
 import json
 from enum import Enum
 from os import listdir as ls
 from subprocess import run as execute
 from subprocess import PIPE
 from sys import argv
+
 
 from VoidServiceControl.env import *
 
@@ -164,10 +166,10 @@ class Translate(object):
     @property
     def __translation(self):
         try:
-            with open(f"VoidServiceControl/languages/{self.lang}.json", "r", encoding="utf-8") as json_file:
+            with importlib.resources.open_text(__package__, f"{self.lang}.json", "utf-8") as json_file:
                 return json.loads(json_file.read())
         except FileNotFoundError:
-            with open(f"VoidServiceControl/languages/en_US.json", "r", encoding="utf-8") as json_file:
+            with importlib.resources.open_text(__package__, f"en_US.json", "utf-8") as json_file:
                 return json.loads(json_file.read())
 
 
