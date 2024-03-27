@@ -1,0 +1,12 @@
+# Template file for 'void-service-control'
+pkgname=void-service-control
+version=
+revision=1
+build_style=python3-module
+hostmakedepends="python3-setuptools"
+short_desc="A simple script that will allow you to manage runit services in Void Linux"
+maintainer="Trueold89 <trueold89@orudo.ru>"
+license="GPL-3"
+homepage="https://git.orudo.ru/trueold89/void-service-control"
+distfiles="https://git.orudo.ru/trueold89/void-service-control/releases/download/${version}/VoidServiceControl-${version}.tar.gz"
+checksum=
