@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='VoidServiceControl',
-    version='0.2',
+    version='0.2.1',
     url='https://git.orudo.ru/trueold89/void-service-control',
     author='trueold89',
     author_email='trueold89@orudo.ru',
